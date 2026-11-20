@@ -1,0 +1,10 @@
+# Roblox / Rojo
+*.rbxl.lock
+*.rbxlx.lock
+sourcemap.json
+
+# Editors and OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

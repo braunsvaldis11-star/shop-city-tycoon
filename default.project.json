@@ -1,0 +1,47 @@
+{
+  "name": "shop-city-tycoon",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$ignoreUnknownInstances": true,
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      },
+      "Client": {
+        "$path": "src/ReplicatedStorage/Client"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true,
+      "Main": {
+        "$path": "src/ServerScriptService/Main.server.luau"
+      },
+      "Services": {
+        "$path": "src/ServerScriptService/Services"
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$ignoreUnknownInstances": true,
+      "DevTools": {
+        "$path": "src/ServerStorage/DevTools"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$ignoreUnknownInstances": true,
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$ignoreUnknownInstances": true,
+        "ClientMain": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/ClientMain.client.luau"
+        },
+        "Controllers": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/Controllers"
+        }
+      }
+    }
+  }
+}
