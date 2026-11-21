@@ -44,9 +44,9 @@ make shop customers buy something inside, and have attractions charge an entry f
 ## Ideas and requests
 
 - [ ] **Museum** business with an entry fee (asked for; there is no museum yet)
-- [ ] Rename the place from "wwww" to Shop City Tycoon, write a game description
-- [ ] Thumbnails and icon for the game page (screenshots from Studio are free; Forge GUI ran
-      out of credits: 3 thumbnails needed 1,600, the account had 1,064)
+- [ ] **Game page:** name, description, icon and 5 thumbnails are ready in
+      [marketing/](../marketing/game-page.md); they still need to be put on the page (the
+      experience is still called "wwww" with no description or images)
 
 ## Recently finished (before the mini-game update)
 

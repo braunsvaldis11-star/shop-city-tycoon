@@ -28,7 +28,7 @@ to earn extra cash. When you own enough shops you can Prestige for a permanent i
 | Studio test mode (no saving, $1B test cash in Studio playtests) | ✅ Done |
 | **Publish the mini-game update** | 🟡 Saved in Studio, **not published yet** |
 | Museum business (asked for) | 🔴 Idea, not started |
-| Game page: name, description, thumbnails | 🔴 Not started (place is still called "wwww") |
+| Game page: name, description, icon, thumbnails | 🟡 Ready in [marketing/](marketing/game-page.md), not uploaded yet (page is still called "wwww") |
 
 The full list is in [docs/TODO.md](docs/TODO.md).
 
@@ -56,6 +56,7 @@ src/
   StarterPlayer/StarterPlayerScripts/
     ClientMain.client.luau   boots every controller
     Controllers/             one controller per feature (UI, Interior, MiniGame, ...)
+marketing/         game page: name, description, icon, thumbnails (+ raw screenshots)
 docs/
   ARCHITECTURE.md  how the pieces fit together
   MINI-GAMES.md    every business's mini game and how it pays
