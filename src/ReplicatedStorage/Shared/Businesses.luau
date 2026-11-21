@@ -2,10 +2,12 @@
 -- Businesses: reusable business templates.
 -- Every business shares ONE upgrade system (Upgrades below). A template only supplies
 -- numbers, colours, a lot in the city and the words used in its labels, so adding a
--- new business is a single table entry.
+-- new business is a single table entry. Each business's own upgrade names (guest rooms
+-- for the hotel, brick ovens for the pizzeria) live in UpgradeFlavor.
 -- Container: ReplicatedStorage.Shared
 
 local CityLayout = require(script.Parent.CityLayout)
+local UpgradeFlavor = require(script.Parent.UpgradeFlavor)
 
 local Businesses = {}
 
@@ -19,7 +21,8 @@ export type Upgrade = {
 	levelReq: { number }?, -- optional business level needed for each upgrade level
 	tiers: { string }?, -- optional visual tier names (index = level + 1)
 	name: string, -- label template
-	desc: string, -- description template
+	desc: string, -- description template (generic fallback)
+	effect: string, -- what it does to the numbers, shown after every business's own flavour text
 }
 
 export type Words = {
@@ -66,49 +69,49 @@ Businesses.Upgrades = {
 	-- Production
 	{ id = "equipment", category = "Kitchen", max = 4, costFactor = 0.05, growth = 2.2, emoji = "⭐",
 		tiers = { "Basic", "Stone", "Deluxe", "Turbo", "Golden" },
-		name = "Better {stations}", desc = "Upgraded {stations} make {products} faster. +35% production." },
+		name = "Better {stations}", desc = "Upgraded {stations} make {products} faster.", effect = "+35% production." },
 	{ id = "stations", category = "Kitchen", max = 4, costFactor = 0.08, growth = 1.9, emoji = "➕",
-		name = "Extra {stations}", desc = "Installs another {station}. +1 production line." },
+		name = "Extra {stations}", desc = "Installs another {station}.", effect = "+1 production line." },
 	{ id = "prep", category = "Kitchen", max = 3, costFactor = 0.04, growth = 1.9, emoji = "🔪",
-		name = "Prep Stations", desc = "Extra preparation counters. +15% production." },
+		name = "Prep Stations", desc = "Extra preparation counters.", effect = "+15% production." },
 	-- Employees
 	{ id = "cashiers", category = "Employees", max = 3, costFactor = 0.06, growth = 2.0, emoji = "💵",
-		name = "Hire Cashier", desc = "Opens another register. +1 service line." },
+		name = "Hire Cashier", desc = "Opens another register.", effect = "+1 service line." },
 	{ id = "workers", category = "Employees", max = 4, costFactor = 0.05, growth = 1.9, emoji = "🧑‍🍳",
-		name = "Hire {worker}", desc = "A new {worker} joins the team. +20% production." },
+		name = "Hire {worker}", desc = "A new {worker} joins the team.", effect = "+20% production." },
 	{ id = "cleaners", category = "Employees", max = 2, costFactor = 0.04, growth = 2.2, emoji = "🧹",
-		name = "Hire Cleaner", desc = "Keeps the place spotless. +Reputation." },
+		name = "Hire Cleaner", desc = "Keeps the place spotless.", effect = "+Reputation." },
 	{ id = "training", category = "Employees", max = 5, costFactor = 0.04, growth = 1.8, emoji = "⚡",
-		name = "Staff Training", desc = "Every employee works faster. +20% service speed." },
+		name = "Staff Training", desc = "Every employee works faster.", effect = "+20% service speed." },
 	-- Seating / capacity
 	{ id = "tables", category = "Dining", max = 6, costFactor = 0.03, growth = 1.55, emoji = "🍽️",
-		name = "More {tables}", desc = "Adds another {table} with seats. +8 customer capacity." },
+		name = "More {tables}", desc = "Adds another {table} with seats.", effect = "+8 customer capacity." },
 	{ id = "seating", category = "Dining", max = 3, costFactor = 0.05, growth = 2.0, emoji = "🛋️",
 		tiers = { "Plastic Chairs", "Wooden Chairs", "Cushioned Chairs", "Velvet Booths" },
-		name = "Better Chairs", desc = "Comfy customers spend more. +10% spending." },
+		name = "Better Chairs", desc = "Comfy customers spend more.", effect = "+10% spending." },
 	-- Decoration
 	{ id = "floor", category = "Decoration", max = 3, costFactor = 0.03, growth = 2.2, emoji = "🟫",
 		tiers = { "Plain Tiles", "Checkered Tiles", "Polished Wood", "Marble" },
-		name = "Floor Style", desc = "A nicer floor. +3% spending, +Reputation." },
+		name = "Floor Style", desc = "A nicer floor.", effect = "+3% spending, +Reputation." },
 	{ id = "walls", category = "Decoration", max = 3, costFactor = 0.03, growth = 2.2, emoji = "🧱",
 		tiers = { "Plain Paint", "Brick", "Wood Panels", "Luxury Wallpaper" },
-		name = "Wall Style", desc = "Fresh walls. +3% spending, +Reputation." },
+		name = "Wall Style", desc = "Fresh walls.", effect = "+3% spending, +Reputation." },
 	{ id = "lighting", category = "Decoration", max = 3, costFactor = 0.035, growth = 2.1, emoji = "💡",
 		tiers = { "Basic Bulbs", "Pendant Lamps", "Warm Glow", "Neon Signs" },
-		name = "Lighting", desc = "Better lights, better mood. +3% spending, +Reputation." },
+		name = "Lighting", desc = "Better lights, better mood.", effect = "+3% spending, +Reputation." },
 	{ id = "furniture", category = "Decoration", max = 3, costFactor = 0.04, growth = 2.0, emoji = "🪴",
 		tiers = { "Bare", "Potted Plants", "Art & Decor", "Lounge Corner" },
-		name = "Furniture & Plants", desc = "Plants, art and cosy corners. +3% spending, +Reputation." },
+		name = "Furniture & Plants", desc = "Plants, art and cosy corners.", effect = "+3% spending, +Reputation." },
 	{ id = "premium", category = "Decoration", max = 2, costFactor = 0.5, growth = 3.0, emoji = "💎",
 		levelReq = { 4, 7 }, tiers = { "None", "Golden Statue", "Grand Fountain" },
-		name = "Premium Décor", desc = "A show-stopping centerpiece. Big reputation boost." },
+		name = "Premium Décor", desc = "A show-stopping centerpiece.", effect = "Big reputation boost." },
 	-- Marketing
 	{ id = "ads", category = "Marketing", max = 5, costFactor = 0.04, growth = 1.85, emoji = "📰",
-		name = "Flyers & Ads", desc = "Spread the word. +25% customers." },
+		name = "Flyers & Ads", desc = "Spread the word.", effect = "+25% customers." },
 	{ id = "reputation", category = "Marketing", max = 5, costFactor = 0.05, growth = 1.9, emoji = "⭐",
-		name = "Online Reviews", desc = "Great reviews. +Reputation, more customers." },
+		name = "Online Reviews", desc = "Great reviews.", effect = "+Reputation, more customers." },
 	{ id = "pricing", category = "Marketing", max = 5, costFactor = 0.06, growth = 2.0, emoji = "💰",
-		name = "Gourmet {menu}", desc = "Premium {products}. +20% spending per customer." },
+		name = "Gourmet {menu}", desc = "Premium {products}.", effect = "+20% spending per customer." },
 } :: { Upgrade }
 
 local upgradeById: { [string]: Upgrade } = {}
@@ -377,9 +380,27 @@ function Businesses.label(definition: Definition, template: string): string
 	end))
 end
 
+-- What the Manage menu shows for one upgrade at this business: its own name, flavour
+-- text (with the real effect added), emoji and tier names. Falls back to the shared
+-- wording for upgrades a business has no flavour for (cleaners, decor, reviews ...).
+function Businesses.upgradeText(definition: Definition, upgrade: Upgrade): (string, string, string, { string }?)
+	local flavor = UpgradeFlavor[definition.id]
+	local entry = flavor and flavor[upgrade.id]
+	if entry then
+		return entry[1], entry[2] .. " " .. upgrade.effect, entry[3] or upgrade.emoji, entry[4] or upgrade.tiers
+	end
+	local name = Businesses.label(definition, upgrade.name)
+	local desc = Businesses.label(definition, upgrade.desc) .. " " .. upgrade.effect
+	return name, desc, upgrade.emoji, upgrade.tiers
+end
+
 function Businesses.categoryName(definition: Definition, categoryId: string): string
 	if categoryId == "Kitchen" then
 		return definition.words.area
+	end
+	local flavor = UpgradeFlavor[definition.id]
+	if flavor and flavor[categoryId] then
+		return flavor[categoryId]
 	end
 	for _, category in Businesses.Categories do
 		if category.id == categoryId then

@@ -55,6 +55,7 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 | `Goals` | Achievements (data only) |
 | `MiniGames` | Every business's mini game: definitions, order generation, answer checking, grades |
 | `Props` | Low-poly prop factory (parts only, no uploaded assets) |
+| `UpgradeFlavor` | Per-business upgrade names, descriptions, emoji and tier names (Hotel "Guest Room" / "Bed Quality", Cinema "Seat Comfort" ...). Text only: stats stay in `Businesses`; `Businesses.upgradeText` merges the two |
 
 ### Client building blocks (`src/ReplicatedStorage/Client`)
 | Script | What it does |
@@ -62,7 +63,10 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 | `Bubble` | Speech bubbles over NPC heads |
 | `CityPaths` | Sidewalk network pedestrians walk, with every door spliced in |
 | `Icons` | Uploaded image icons (falls back to emoji) |
-| `InteriorBuilder` | Builds a business interior from its upgrade levels |
+| `InteriorBuilder` | Builds a business interior from its upgrade levels: the shared shell (room, counter, registers, staff spots, decor tiers) |
+| `InteriorKits` | What makes each of the 26 businesses look like itself: back-of-house style, station machine, counter/till style, front units (hotel guest rooms, cinema rows, gym machines, aquarium tanks, racks, booths ...) and wall/corner extras |
+| `InteriorStations` | The station machine per business (pizza oven, washer, car lift, server rack ...) at 5 equipment tiers, prep tables, and carried products |
+| `InteriorDraw` | Small drawing helpers and colours shared by the interior modules |
 | `NpcRig` | Cheap anchored NPCs moved with one `BulkMoveTo` per frame |
 | `UIKit` | Check-UI style building blocks (panels, cards, beveled buttons, headers) |
 
@@ -106,4 +110,9 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 
 Room 80 x 64 studs, open-topped. Local −Z is the kitchen, +Z is the exit door.
 Counter at z = −12 (top surface at y = 3, waist height), registers at x = ±6, ±16,
-stations at z = −28, tables at z = 4 and 18, aisle at z = 11.
+stations at z = −28, front units at z = 4 and 18, aisle at z = 11.
+Front units fill 8 slots (x = ±17, ±30 × z = 4, 18) in upgrade order; each kit builds a
+unit in its own frame (x −5.5..5.5, +Z facing the aisle) and returns its seats, which can
+be `stand` (browse on foot) or `busy` (arms moving). Cinema builds its own front (seat
+rows facing a screen on the left wall). Kit extras stay on the side walls (|x| ≥ 36,
+z −1..21), in the back corners (x ±24..39, z −14..−8) or overhead (y > 14).

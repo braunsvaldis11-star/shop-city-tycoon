@@ -39,6 +39,7 @@ type Customer = {
 	timer: number,
 	register: number,
 	seat: number?,
+	view: number?, -- attraction visitors: which viewing spot they stand at
 }
 type Worker = {
 	rig: NpcRig.Rig,
@@ -198,7 +199,7 @@ local function addToTray(): boolean
 	if #tray >= MAX_TRAY then
 		return false
 	end
-	local product = InteriorBuilder.product(a.definition.productStyle, a.definition.theme)
+	local product = InteriorBuilder.product(a.layout.product, a.definition.theme)
 	product.CFrame = CFrame.new(trayPosition(best, #tray + 1))
 	product.Parent = a.npcFolder
 	table.insert(tray, product)
@@ -233,8 +234,9 @@ local function spawnStaff()
 		rig.yaw = math.pi
 		table.insert(a.workers, { rig = rig, role = "cashier", state = "idle", timer = 0, index = i, home = register.cashier })
 	end
-	-- Production workers (cooks, baristas, ...): base worker + hired ones.
-	local workerLook = { shirt = Color3.fromRGB(250, 250, 250), pants = Color3.fromRGB(50, 50, 60), hat = Color3.fromRGB(255, 255, 255) }
+	-- Production workers (cooks, mechanics, housekeepers, ...): base worker + hired ones,
+	-- dressed in the business's own uniform.
+	local workerLook = a.layout.workerLook
 	for i = 1, 1 + upgradeLevel("workers") do
 		local stationIndex = ((i - 1) % #a.layout.stations) + 1
 		local home = a.layout.stations[stationIndex]
@@ -243,9 +245,9 @@ local function spawnStaff()
 		rig.speed = staffSpeed()
 		table.insert(a.workers, { rig = rig, role = "cook", state = "working", timer = rng:NextNumber(0.5, 2.5), index = stationIndex, home = home })
 	end
-	-- Cleaners wander the dining room.
+	-- Cleaners sweep up and down the walkway between the units.
 	for _ = 1, upgradeLevel("cleaners") do
-		local start = a.origin + Vector3.new(rng:NextNumber(-30, 30), 0, rng:NextNumber(0, 24))
+		local start = a.layout.wander[rng:NextInteger(1, #a.layout.wander)]
 		local rig = NpcRig.new(a.npcFolder, rng, { shirt = Color3.fromRGB(90, 170, 230), pants = Color3.fromRGB(40, 60, 110), hat = Color3.fromRGB(255, 220, 60) }, start)
 		rig.speed = staffSpeed() * 0.6
 		local mop = Props.part(nil, "Mop", Vector3.new(0.4, 0.4, 3.5), CFrame.new(), Color3.fromRGB(150, 110, 70), { collide = false, shadow = false })
@@ -279,7 +281,7 @@ local function updateWorker(worker: Worker, dt: number)
 				table.insert(path, tray + Vector3.new(0, 0, -3))
 				rig:setPath(path)
 				rig.speed = staffSpeed()
-				rig.carrying = InteriorBuilder.product(a.definition.productStyle, a.definition.theme)
+				rig.carrying = InteriorBuilder.product(a.layout.product, a.definition.theme)
 				;(rig.carrying :: BasePart).Parent = a.npcFolder
 				worker.state = "delivering"
 			end
@@ -308,8 +310,7 @@ local function updateWorker(worker: Worker, dt: number)
 		worker.timer -= dt
 		if worker.timer <= 0 then
 			rig.working = false
-			local side = if rng:NextNumber() < 0.5 then -1 else 1
-			rig:setPath({ a.origin + Vector3.new(side * rng:NextNumber(9, 36), 0, rng:NextNumber(-3, 27)) })
+			rig:setPath({ a.layout.wander[rng:NextInteger(1, #a.layout.wander)] })
 			worker.state = "walking"
 		end
 	elseif rig:step(dt) then
@@ -351,6 +352,24 @@ local function serveTime(): number
 	return math.clamp(3.2 / (1 + 0.2 * upgradeLevel("training")), 0.9, 3.2)
 end
 
+-- Seats are reached from the walkway: lane -> aisle point -> (row approach) -> seat.
+local function pathToSeat(seat: any): { Vector3 }
+	local path = { (active :: any).layout.lane, seat.aisle }
+	if seat.approach then
+		table.insert(path, seat.approach)
+	end
+	table.insert(path, seat.position)
+	return path
+end
+
+-- Settle into a seat: sit down, or stand and browse; busy seats move the arms
+-- (playing a cabinet, running on a treadmill, typing).
+local function settle(rig: NpcRig.Rig, seat: any)
+	rig.yaw = seat.yaw
+	rig.sitting = not seat.stand
+	rig.working = seat.busy == true
+end
+
 local function finishOrder(customer: Customer, byPlayer: boolean)
 	local a = active :: any
 	local queue = a.queues[customer.register]
@@ -367,7 +386,7 @@ local function finishOrder(customer: Customer, byPlayer: boolean)
 	end
 	takeFromTray()
 	local rig = customer.rig
-	rig.carrying = InteriorBuilder.product(a.definition.productStyle, a.definition.theme)
+	rig.carrying = InteriorBuilder.product(a.layout.product, a.definition.theme)
 	;(rig.carrying :: BasePart).Parent = a.npcFolder
 
 	local cashier = nil
@@ -397,7 +416,7 @@ local function finishOrder(customer: Customer, byPlayer: boolean)
 		a.seatTaken[seatIndex] = true
 		customer.seat = seatIndex
 		customer.state = "toSeat"
-		rig:setPath({ a.layout.lane, seat.aisle, seat.position })
+		rig:setPath(pathToSeat(seat))
 	else
 		customer.state = "leaving"
 		rig:setPath({ a.layout.lane, a.layout.door })
@@ -437,9 +456,7 @@ local function updateCustomer(customer: Customer, dt: number): boolean -- return
 		end
 	elseif state == "toSeat" then
 		if rig:step(dt) then
-			local seat = a.layout.seats[customer.seat :: number]
-			rig.yaw = seat.yaw
-			rig.sitting = true
+			settle(rig, a.layout.seats[customer.seat :: number])
 			customer.state = "sitting"
 			customer.timer = rng:NextNumber(6, 11)
 			if rig.carrying then
@@ -451,23 +468,38 @@ local function updateCustomer(customer: Customer, dt: number): boolean -- return
 		customer.timer -= dt
 		if customer.timer <= 0 then
 			rig.sitting = false
+			rig.working = false
 			local seat = a.layout.seats[customer.seat :: number]
 			a.seatTaken[customer.seat :: number] = nil
 			customer.seat = nil
 			customer.state = "leaving"
-			rig:setPath({ seat.aisle, a.layout.lane, a.layout.door })
+			local path = {}
+			if seat.approach then
+				table.insert(path, seat.approach)
+			end
+			table.insert(path, seat.aisle)
+			table.insert(path, a.layout.lane)
+			table.insert(path, a.layout.door)
+			rig:setPath(path)
 		end
 	elseif state == "toView" then
 		if rig:step(dt) then
 			customer.state = "viewing"
 			customer.timer = rng:NextNumber(5, 9)
-			rig:face(rig.position + Vector3.new(0, 0, -1))
+			local view = customer.view and a.layout.views[customer.view]
+			if view then
+				rig.yaw = view.yaw
+			else
+				rig:face(rig.position + Vector3.new(0, 0, -1))
+			end
 		end
 	elseif state == "viewing" then
 		customer.timer -= dt
 		if customer.timer <= 0 then
 			customer.state = "leaving"
-			rig:setPath({ a.origin + Vector3.new(0, 0, -4), a.layout.lane, a.layout.door })
+			local view = customer.view and a.layout.views[customer.view]
+			customer.view = nil
+			rig:setPath({ if view then view.aisle else a.origin + Vector3.new(0, 0, -4), a.layout.lane, a.layout.door })
 		end
 	elseif state == "leaving" then
 		if rig:step(dt) then
@@ -499,8 +531,7 @@ local function seatCustomers(count: number)
 			local seat = a.layout.seats[seatIndex]
 			local rig = NpcRig.new(a.npcFolder, rng, nil, seat.position)
 			rig.speed = rng:NextNumber(8, 11)
-			rig.yaw = seat.yaw
-			rig.sitting = true
+			settle(rig, seat)
 			a.seatTaken[seatIndex] = true
 			table.insert(a.customers, {
 				rig = rig, state = "sitting", amount = 0, timer = rng:NextNumber(2, 10), register = 1, seat = seatIndex,
@@ -510,10 +541,32 @@ local function seatCustomers(count: number)
 end
 
 -- Attractions (entry fee): the visitor pays at the door, then enjoys the place for a
--- while (a seat, or watching from the front of the room) and leaves.
+-- while (a seat, a viewing spot the place provides, or watching from the front of the
+-- room) and leaves.
 local function viewingSpot(): Vector3
 	local a = active :: any
-	return a.origin + Vector3.new(rng:NextNumber(-32, 32), 0, rng:NextNumber(-8, -3))
+	return a.origin + Vector3.new(rng:NextNumber(-22, 22), 0, rng:NextNumber(-7, -3))
+end
+
+local function freeView(): number?
+	local a = active :: any
+	local views = a.layout.views
+	if not views or #views == 0 then
+		return nil
+	end
+	local used = {}
+	for _, customer in a.customers do
+		if customer.view then
+			used[customer.view] = true
+		end
+	end
+	local free = {}
+	for i in views do
+		if not used[i] then
+			table.insert(free, i)
+		end
+	end
+	return if #free > 0 then free[rng:NextInteger(1, #free)] else nil
 end
 
 local function spawnVisitor(amount: number)
@@ -533,15 +586,22 @@ local function spawnVisitor(amount: number)
 			table.insert(freeSeats, i)
 		end
 	end
-	if #freeSeats > 0 and rng:NextNumber() < 0.5 then
+	if #freeSeats > 0 and rng:NextNumber() < 0.75 then
 		local seatIndex = freeSeats[rng:NextInteger(1, #freeSeats)]
 		local seat = a.layout.seats[seatIndex]
 		a.seatTaken[seatIndex] = true
 		customer.seat = seatIndex
 		customer.state = "toSeat"
-		rig:setPath({ a.layout.lane, seat.aisle, seat.position })
+		rig:setPath(pathToSeat(seat))
 	else
-		rig:setPath({ a.layout.lane, a.origin + Vector3.new(0, 0, -4), viewingSpot() })
+		local viewIndex = freeView()
+		if viewIndex then
+			local view = a.layout.views[viewIndex]
+			customer.view = viewIndex
+			rig:setPath({ a.layout.lane, view.aisle, view.position })
+		else
+			rig:setPath({ a.layout.lane, a.origin + Vector3.new(0, 0, -4), viewingSpot() })
+		end
 	end
 	table.insert(a.customers, customer)
 end

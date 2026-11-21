@@ -529,7 +529,7 @@ local function update(dt: number)
 				if definition and not definition.entryFee then
 					-- Out with what they bought: this is when the shop gets paid.
 					dropItem(walker)
-					local item = InteriorBuilder.product(definition.productStyle, definition.theme)
+					local item = InteriorBuilder.product(InteriorBuilder.productStyle(definition), definition.theme)
 					item.Parent = rig.model
 					rig.carrying = item
 					walker.carryStops = rng:NextInteger(CARRY_STOPS_MIN, CARRY_STOPS_MAX)

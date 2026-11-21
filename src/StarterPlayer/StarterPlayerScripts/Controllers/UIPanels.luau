@@ -509,12 +509,12 @@ local function renderUpgradeRows(list: Instance, ctx: any, definition: any, biz:
 			local cap, requirement = Formulas.upgradeCap(upgrade, biz.level)
 			local r = row(list, 102, order)
 			r.Name = "Upgrade_" .. upgrade.id
-			UIKit.icon({ Text = upgrade.emoji, Color = definition.theme.primary, Size = UDim2.fromOffset(66, 66), Position = UDim2.fromOffset(12, 18), Parent = r })
-			text(r, Businesses.label(definition, upgrade.name), 90, 8, 330, 26, 21)
-			local description = Businesses.label(definition, upgrade.desc)
-			if upgrade.tiers then
-				local current = upgrade.tiers[level + 1] or ""
-				local nextTier = upgrade.tiers[level + 2]
+			local name, description, emoji, tiers = Businesses.upgradeText(definition, upgrade)
+			UIKit.icon({ Text = emoji, Color = definition.theme.primary, Size = UDim2.fromOffset(66, 66), Position = UDim2.fromOffset(12, 18), Parent = r })
+			text(r, name, 90, 8, 330, 26, 21)
+			if tiers then
+				local current = tiers[level + 1] or ""
+				local nextTier = tiers[level + 2]
 				description = "Now: " .. current .. (if nextTier then "  →  Next: " .. nextTier else "") .. "\n" .. description
 			end
 			text(r, description, 90, 34, 360, 42, 14, C.Muted, true)
