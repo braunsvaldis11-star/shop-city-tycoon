@@ -18,9 +18,10 @@ local registry = {
 	Sync = require(folder:WaitForChild("SyncService")),
 	Job = require(folder:WaitForChild("JobService")),
 	MiniGame = require(folder:WaitForChild("MiniGameService")),
+	Monetization = require(folder:WaitForChild("MonetizationService")),
 }
 
-local ORDER = { "Data", "Economy", "Business", "Interior", "Progression", "Sync", "Job", "MiniGame" }
+local ORDER = { "Data", "Economy", "Business", "Interior", "Progression", "Sync", "Job", "MiniGame", "Monetization" }
 
 for _, name in ORDER do
 	local service = (registry :: any)[name]
@@ -31,7 +32,7 @@ end
 
 -- Start everything except Data first, so their onLoaded callbacks are registered
 -- before any player's data finishes loading.
-for _, name in { "Economy", "Business", "Interior", "Progression", "Sync", "Job", "MiniGame", "Data" } do
+for _, name in { "Economy", "Business", "Interior", "Progression", "Sync", "Job", "MiniGame", "Monetization", "Data" } do
 	local service = (registry :: any)[name]
 	local ok, err = pcall(service.start)
 	if not ok then

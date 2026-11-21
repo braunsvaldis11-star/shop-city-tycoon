@@ -8,6 +8,7 @@
 -- refreshes live numbers in place, so hover animations and scrolling stay smooth.
 -- Container: StarterPlayerScripts.Controllers
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -22,6 +23,7 @@ local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Formulas = require(Shared.Formulas)
 local Goals = require(Shared.Goals)
+local Monetization = require(Shared.Monetization)
 local Client = ReplicatedStorage:WaitForChild("Client")
 local UIKit = require(Client:WaitForChild("UIKit"))
 local Icons = require(Client:WaitForChild("Icons"))
@@ -38,6 +40,7 @@ Panels.Tabs = {
 	{ id = "Map", name = "City Map", short = "Map", emoji = "🗺️", color = C.Blue, theme = "Cyan" },
 	{ id = "Prestige", name = "Prestige", short = "Prestige", emoji = "🌟", color = C.Purple, theme = "Purple" },
 	{ id = "Achievements", name = "Awards", short = "Awards", emoji = "🏆", color = Color3.fromRGB(235, 30, 140), theme = "Magenta" },
+	{ id = "Store", name = "Store", short = "Store", emoji = "🛒", color = Color3.fromRGB(255, 185, 0), theme = "Amber" },
 	{ id = "Settings", name = "Settings", short = "Settings", emoji = "⚙️", color = C.Grey, theme = "Silver" },
 }
 
@@ -251,7 +254,7 @@ local function saleCard(list: Instance, ctx: any, definition: any, order: number
 	businessIcon(definition, { Size = UDim2.fromOffset(60, 60), Position = UDim2.fromOffset(12, 9), Parent = face })
 	text(face, definition.name, 86, 8, 300, 26, 22)
 	text(face, "📍 " .. districtName(definition), 86, 36, 300, 18, 14, C.Muted, true)
-	local income = Formulas.startingIncome(definition, ctx.state.prestige, ctx.state.population)
+	local income = Formulas.startingIncome(definition, ctx.state.prestige, ctx.state.population, ctx.state.incomeBoost)
 	text(face, "Earns about " .. Format.cash(income) .. "/s", 86, 56, 300, 16, 13, SKY, true)
 	local starter = ctx.state.starterShop == definition.id
 	local price = rightText(face, Format.cash(definition.price), 44, 12, 220, 30, 26)
@@ -405,7 +408,7 @@ local function detailTop(container: Frame, ctx: any, definition: any, biz: any)
 end
 
 local function renderOverview(list: Instance, ctx: any, definition: any, biz: any): Updater
-	local stats = biz.stats or Formulas.computeStats(definition, biz, ctx.state.prestige, ctx.state.population)
+	local stats = biz.stats or Formulas.computeStats(definition, biz, ctx.state.prestige, ctx.state.population, ctx.state.incomeBoost)
 
 	-- Level card
 	local levelRow = row(list, 106, 1)
@@ -570,7 +573,7 @@ end
 local function renderForSale(container: Frame, ctx: any, definition: any): Updater
 	local state = ctx.state
 	local starter = state.starterShop == definition.id
-	local income = Formulas.startingIncome(definition, state.prestige, state.population)
+	local income = Formulas.startingIncome(definition, state.prestige, state.population, state.incomeBoost)
 	local card = UIKit.card({ Name = "Info", Size = UDim2.new(1, 0, 0, 236), Position = UDim2.fromOffset(0, 92), Parent = container })
 	businessIcon(definition, { Size = UDim2.fromOffset(150, 150), Position = UDim2.fromOffset(18, 18), Radius = 8, Parent = card })
 	local facts = {
@@ -1578,6 +1581,125 @@ local function renderSettings(container: Frame, ctx: any)
 	text(help, "PC: E to buy / enter, F plays the mini game, B Shops, U Upgrades, M Map, P Prestige, K Awards.\nConsole: Select opens the menu, B goes back / closes, X uses doors, Y plays the mini game.\nMobile: tap the on-screen prompts and buttons.", 14, 42, 660, 100, 15, C.Muted, true)
 end
 
+----- Store tab -----
+-- Game passes and cash packs (Shared/Monetization). The client only opens Roblox's own
+-- purchase prompt; MonetizationService checks ownership and pays out the cash.
+local ROBUX = "\u{E002}" -- Roblox's Robux symbol (drawn by the built-in fonts)
+local prices: { [string]: number } = {}
+local priceWaiters: { [string]: { (number) -> () } } = {}
+
+-- The Robux price set on the Creator Dashboard, asked once per session.
+local function withPrice(kind: string, id: number, onPrice: (number) -> ())
+	local key = kind .. id
+	local known = prices[key]
+	if known then
+		onPrice(known)
+		return
+	end
+	local waiting = priceWaiters[key]
+	if waiting then
+		table.insert(waiting, onPrice)
+		return
+	end
+	waiting = { onPrice }
+	priceWaiters[key] = waiting
+	task.spawn(function()
+		local ok, info = pcall(function()
+			return (MarketplaceService :: any):GetProductInfoAsync(id, if kind == "pass" then Enum.InfoType.GamePass else Enum.InfoType.Product)
+		end)
+		priceWaiters[key] = nil
+		if ok and type(info) == "table" and type(info.PriceInRobux) == "number" then
+			prices[key] = info.PriceInRobux
+			for _, callback in waiting do
+				task.spawn(callback, info.PriceInRobux)
+			end
+		end
+	end)
+end
+
+local function packTime(minutes: number): string
+	if minutes < 60 then
+		return minutes .. " minutes"
+	end
+	local hours = minutes // 60
+	return hours .. (if hours == 1 then " hour" else " hours")
+end
+
+local function storeButton(parent: Instance, ctx: any, name: string, kind: string, id: number, owned: boolean, onBuy: () -> ())
+	local ready = id ~= 0 and not owned
+	local button = UIKit.button({
+		Name = name,
+		Text = if owned then "✅ Owned" elseif id == 0 then "Soon" else "Buy",
+		Color = if ready then C.Green else C.Grey,
+		Size = UDim2.fromOffset(150, 56),
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		MaxTextSize = 24,
+		Parent = parent,
+	}, function()
+		if owned then
+			return
+		elseif id == 0 then
+			ctx.ui.notify("info", "🛒 Coming soon!")
+			return
+		end
+		onBuy()
+	end)
+	if ready then
+		withPrice(kind, id, function(price)
+			if button.Parent then
+				UIKit.setButtonText(button, ROBUX .. " " .. Format.commas(price))
+			end
+		end)
+	end
+end
+
+local function renderStore(container: Frame, ctx: any): Updater
+	local state = ctx.state
+	local player = Players.LocalPlayer
+	local list = scroll(container)
+	local owned: { [string]: boolean } = {}
+	for _, key in state.passes or {} do
+		owned[key] = true
+	end
+
+	sectionTitle(list, "⭐ GAME PASSES • yours forever", 1)
+	for i, pass in Monetization.Passes do
+		local r = row(list, 96, 1 + i)
+		UIKit.icon({ Text = pass.emoji, Image = pass.icon, Color = pass.color, Size = UDim2.fromOffset(72, 72), Position = UDim2.fromOffset(12, 12), Parent = r })
+		text(r, pass.name, 98, 12, 400, 28, 24)
+		text(r, pass.desc, 98, 44, 430, 42, 15, C.Muted, true)
+		storeButton(r, ctx, "Buy_" .. pass.key, "pass", pass.id, owned[pass.key] == true, function()
+			MarketplaceService:PromptGamePassPurchase(player, pass.id)
+		end)
+	end
+
+	sectionTitle(list, "💵 CASH PACKS • buy as many as you like", 10)
+	local amounts: { { label: TextLabel, pack: Monetization.Pack } } = {}
+	for i, pack in Monetization.Packs do
+		local r = row(list, 96, 10 + i)
+		UIKit.icon({ Text = pack.emoji, Image = pack.icon, Color = pack.color, Size = UDim2.fromOffset(72, 72), Position = UDim2.fromOffset(12, 12), Parent = r })
+		text(r, pack.name, 98, 10, 400, 28, 24)
+		local amount = text(r, "", 98, 40, 430, 26, 22, C.Money)
+		text(r, packTime(pack.minutes) .. " of your income, paid right away.", 98, 68, 430, 18, 14, C.Muted, true)
+		storeButton(r, ctx, "Buy_" .. pack.key, "product", pack.id, false, function()
+			MarketplaceService:PromptProductPurchase(player, pack.id)
+		end)
+		table.insert(amounts, { label = amount, pack = pack })
+	end
+	local note = row(list, 50, 20)
+	text(note, "Prices are in Robux. Cash packs pay what your shops earn right now, so they grow with your city.", 14, 8, 660, 34, 14, C.Muted, true)
+
+	local function update(current: any)
+		local income = tonumber(current.income) or 0
+		for _, entry in amounts do
+			entry.label.Text = "Get " .. Format.cash(Monetization.packAmount(entry.pack, income))
+		end
+	end
+	update(state)
+	return update
+end
+
 ----- Change detection -----
 -- A short string of everything a page shows. The controller re-renders the open page
 -- only when this changes; anything else (cash, earned totals) updates in place.
@@ -1613,6 +1735,10 @@ function Panels.signature(tabId: string, state: any, view: any): string
 				table.insert(parts, (if info.unlocked then "U" else "") .. math.floor(info.progress / math.max(achievement.target, 1) * 50))
 			end
 		end
+	elseif tabId == "Store" then
+		local keys = table.clone(state.passes or {})
+		table.sort(keys)
+		table.insert(parts, table.concat(keys, ","))
 	else
 		local settings = state.settings or {}
 		table.insert(parts, tostring(settings.sfx) .. tostring(settings.ambient) .. tostring(settings.music) .. tostring(state.saving))
@@ -1632,6 +1758,8 @@ function Panels.render(tabId: string, container: Frame, ctx: any): Updater?
 		return renderPrestige(container, ctx)
 	elseif tabId == "Achievements" then
 		renderAchievements(container, ctx)
+	elseif tabId == "Store" then
+		return renderStore(container, ctx)
 	else
 		renderSettings(container, ctx)
 	end

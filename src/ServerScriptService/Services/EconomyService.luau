@@ -79,10 +79,11 @@ function EconomyService.recompute(player: Player)
 	end
 	local data = profile.data
 	local cache: Cache = { total = 0, perBusiness = {} }
+	local boost = if services.Monetization then services.Monetization.incomeMultiplier(player) else 1
 	for id, state in data.businesses do
 		local definition = Businesses.get(id)
 		if definition then
-			local stats = Formulas.computeStats(definition, state, data.prestige, data.population)
+			local stats = Formulas.computeStats(definition, state, data.prestige, data.population, boost)
 			cache.perBusiness[id] = stats
 			cache.total += stats.income
 		end
@@ -147,15 +148,24 @@ end
 
 local function onLoaded(player: Player, profile: any)
 	setupLeaderstats(player)
-	EconomyService.recompute(player)
-
-	-- Offline earnings: half of live income, capped at two hours.
 	local data = profile.data
 	local away = os.time() - (tonumber(data.lastOnline) or os.time())
+	-- Game passes first (2× Cash, Offline Tycoon), so the offline pay below includes them.
+	if services.Monetization then
+		services.Monetization.loadPasses(player)
+	end
+	EconomyService.recompute(player)
+
+	-- Offline earnings: half of live income, capped at two hours (the Offline Tycoon pass:
+	-- all of it, for up to eight hours).
 	local cache = caches[player]
+	local cap, rate = Config.OFFLINE_CAP_SECONDS, Config.OFFLINE_RATE
+	if services.Monetization then
+		cap, rate = services.Monetization.offlineTerms(player)
+	end
 	if away > 60 and cache and cache.total > 0 then
-		local seconds = math.min(away, Config.OFFLINE_CAP_SECONDS)
-		local earned = math.floor(cache.total * seconds * Config.OFFLINE_RATE)
+		local seconds = math.min(away, cap)
+		local earned = math.floor(cache.total * seconds * rate)
 		if earned > 0 then
 			EconomyService.addMoney(player, earned, true)
 			task.delay(4, function()

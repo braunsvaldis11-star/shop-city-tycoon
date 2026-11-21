@@ -213,7 +213,7 @@ local function styleLot(lot: Lot, state: any)
 			local affordable = state.money >= definition.price
 			setLabel(lot.sign, "Status", if starter then "🎁 YOUR FIRST SHOP" else "FOR SALE")
 			setLabel(lot.sign, "Price", Format.cash(definition.price), if affordable then Color3.fromRGB(60, 170, 70) else Color3.fromRGB(200, 70, 60))
-			setLabel(lot.sign, "Income", "~" .. Format.cash(Formulas.startingIncome(definition, state.prestige, state.population)) .. "/s")
+			setLabel(lot.sign, "Income", "~" .. Format.cash(Formulas.startingIncome(definition, state.prestige, state.population, state.incomeBoost)) .. "/s")
 		end
 	end
 	if lot.tag then

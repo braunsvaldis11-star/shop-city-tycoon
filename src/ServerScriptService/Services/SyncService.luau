@@ -54,6 +54,8 @@ local function buildSnapshot(player: Player, profile: any): any
 		inside = services.Interior.getInsideBusiness(player),
 		job = if services.Job then services.Job.describe(player) else nil,
 		saving = profile.canSave,
+		passes = if services.Monetization then services.Monetization.ownedKeys(player) else {},
+		incomeBoost = if services.Monetization then services.Monetization.incomeMultiplier(player) else 1,
 	}
 end
 

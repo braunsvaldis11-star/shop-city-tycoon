@@ -31,13 +31,15 @@ local START_COOLDOWN = 0.4 -- seconds between new orders
 local SESSION_TIMEOUT = 180 -- an order left open longer than this pays nothing
 local MIN_REWARD = 10
 
--- One average sale of this business (the same value its customers pay).
+-- One average sale of this business (the same value its customers pay), plus the VIP
+-- pass bonus: the base every mini-game reward is graded from.
 local function saleValue(player: Player, businessId: string): number
 	local stats = services.Economy.getCache(player).perBusiness[businessId]
 	if not stats or stats.income <= 0 then
 		return 0
 	end
-	return stats.income * 60 / math.max(stats.throughput, 0.01)
+	local bonus = if services.Monetization then services.Monetization.miniGameBonus(player) else 1
+	return stats.income * 60 / math.max(stats.throughput, 0.01) * bonus
 end
 
 local function ownsAndInside(player: Player, businessId: string): boolean

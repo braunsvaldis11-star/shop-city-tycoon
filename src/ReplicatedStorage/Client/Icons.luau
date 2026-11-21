@@ -21,6 +21,7 @@ Icons.Menu = {
 	Prestige = "rbxassetid://79642633995767", -- Rebirth_1st_Outline
 	Achievements = "rbxassetid://85191169051998", -- Golden_Trophy_1st_Outline
 	Settings = "rbxassetid://75107759162473", -- Settings_1_1st_Outline
+	Store = "rbxassetid://103657634848918", -- Golden_Robux_1st_Outline
 	Cash = "rbxassetid://88694661500877", -- Green_Cash_1st_Outline
 	Population = "rbxassetid://84565274576236", -- Player_1st_Outline
 	City = "rbxassetid://107107586946828", -- Blue_House_1st_Outline

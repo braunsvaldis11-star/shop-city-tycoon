@@ -58,6 +58,7 @@ function DataService.defaults(): any
 		achievements = {},
 		stats = { upgradesBought = 0, hires = 0, served = 0, levelUps = 0, papers = 0, bags = 0, routes = 0 },
 		settings = { music = true, sfx = true, ambient = true },
+		receipts = {}, -- [purchaseId] = os.time() of cash packs already paid out (MonetizationService)
 		lastOnline = os.time(),
 	}
 end
@@ -90,6 +91,9 @@ local function sanitize(data: any)
 	data.mission = nil
 	data.daily = nil
 	data.jobVersion = nil
+	if type(data.receipts) ~= "table" then
+		data.receipts = {}
+	end
 	for id, business in data.businesses do
 		if type(business) ~= "table" then
 			data.businesses[id] = nil
@@ -152,13 +156,15 @@ local function loadAsync(player: Player): (any?, boolean)
 	return nil, false
 end
 
-local function saveAsync(player: Player, profile: Profile, release: boolean): boolean
+local function writeAsync(player: Player, profile: Profile, release: boolean): boolean
 	local dataStore = store
 	if not dataStore or not profile.canSave or not profile.loaded then
 		return false
 	end
 	profile.data.lastOnline = os.time()
 	local snapshot = deepCopy(profile.data)
+	-- Clear the flag now: anything that changes while this write is in flight marks it again.
+	profile.dirty = false
 	local key = KEY_PREFIX .. player.UserId
 	for attempt = 1, 3 do
 		local lostLock = false
@@ -181,13 +187,29 @@ local function saveAsync(player: Player, profile: Profile, release: boolean): bo
 				profile.canSave = false
 				return false
 			end
-			profile.dirty = false
 			return true
 		end
 		warn(string.format("[DataService] Save attempt %d failed for %s: %s", attempt, player.Name, tostring(err)))
 		task.wait(attempt)
 	end
+	profile.dirty = true
 	return false
+end
+
+-- One save at a time per player, so an older snapshot can never land after a newer one
+-- (an autosave started before a Robux purchase must not overwrite the purchase's save).
+local saving: { [Player]: boolean } = {}
+local function saveAsync(player: Player, profile: Profile, release: boolean): boolean
+	while saving[player] do
+		task.wait(0.1)
+	end
+	saving[player] = true
+	local ok, result = pcall(writeAsync, player, profile, release)
+	saving[player] = nil
+	if not ok then
+		warn("[DataService] Save failed for " .. player.Name .. ": " .. tostring(result))
+	end
+	return ok and result == true
 end
 
 ----- Public API -----
@@ -210,6 +232,16 @@ function DataService.markDirty(player: Player)
 	end
 end
 
+-- Saves this player right away (MonetizationService, after paying out a Robux purchase).
+-- Returns true once the data is safely written.
+function DataService.saveNow(player: Player): boolean
+	local profile = profiles[player]
+	if not profile or not profile.loaded then
+		return false
+	end
+	return saveAsync(player, profile, false)
+end
+
 function DataService.onLoaded(callback: (Player, Profile) -> ())
 	table.insert(loadedCallbacks, callback)
 end
@@ -229,6 +261,7 @@ function DataService.resetForPrestige(profile: Profile)
 	fresh.stats = old.stats
 	fresh.settings = old.settings
 	fresh.visited = old.visited
+	fresh.receipts = old.receipts
 	profile.data = fresh
 	profile.dirty = true
 end

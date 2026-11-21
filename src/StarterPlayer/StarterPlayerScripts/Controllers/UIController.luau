@@ -10,6 +10,7 @@ local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -576,6 +577,7 @@ local MENU_BUTTONS = {
 	{ tab = "Map", text = "Map", key = Enum.KeyCode.M, hint = "M" },
 	{ tab = "Prestige", text = "Prestige", key = Enum.KeyCode.P, hint = "P" },
 	{ tab = "Achievements", text = "Awards", key = Enum.KeyCode.K, hint = "K" },
+	{ tab = "Store", text = "Store", key = nil, hint = nil },
 	{ tab = "Settings", text = "Settings", key = nil, hint = nil },
 }
 
@@ -759,7 +761,7 @@ local function buildWindow()
 			Image = Icons.menu(tab.id),
 			Stack = true,
 			Color = C.PanelLight,
-			Size = UDim2.fromOffset(SIDEBAR_WIDTH, 78),
+			Size = UDim2.fromOffset(SIDEBAR_WIDTH, 70), -- six tabs fit the 476px page
 			LayoutOrder = i,
 			MaxTextSize = 16,
 			Parent = tabBar,
@@ -1222,6 +1224,19 @@ function UIController.start()
 	player:GetAttributeChangedSignal("Money"):Connect(refreshAffordability)
 	bindInput()
 
+	-- VIP game pass: a golden tag in front of the owner's chat messages (the server sets
+	-- the VIP attribute on the player once it has checked the pass).
+	TextChatService.OnIncomingMessage = function(message: TextChatMessage): TextChatMessageProperties?
+		local source = message.TextSource
+		local speaker = if source then Players:GetPlayerByUserId(source.UserId) else nil
+		if speaker and speaker:GetAttribute("VIP") == true then
+			local properties = Instance.new("TextChatMessageProperties")
+			properties.PrefixText = '<font color="#FFD23C">[⭐ VIP]</font> ' .. message.PrefixText
+			return properties
+		end
+		return nil
+	end
+
 	-- Download the icon images up front so menus never open with empty tiles.
 	task.spawn(function()
 		local images = {}
@@ -1246,7 +1261,8 @@ function UIController.start()
 			displayedMoney = target
 		end
 		cashLabel.Text = Format.cash(math.floor(displayedMoney + 0.5))
-		incomeLabel.Text = "+" .. Format.cash(Store.income()) .. "/s"
+		local boosted = Store.state ~= nil and (tonumber(Store.state.incomeBoost) or 1) > 1
+		incomeLabel.Text = "+" .. Format.cash(Store.income()) .. "/s" .. (if boosted then "  💰2×" else "")
 		local badge = prestigeBadge
 		if badge then
 			local state = Store.state

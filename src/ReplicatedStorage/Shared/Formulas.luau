@@ -47,8 +47,9 @@ function Formulas.reputation(state: BusinessState): number
 end
 
 -- `population` is the player's City Population level (more people on the streets means
--- more customers walking in at every business they own).
-function Formulas.computeStats(definition: Businesses.Definition, state: BusinessState, prestige: number, population: number?): Stats
+-- more customers walking in at every business they own). `boost` multiplies income (the
+-- 2× Cash game pass); leave it out for 1.
+function Formulas.computeStats(definition: Businesses.Definition, state: BusinessState, prestige: number, population: number?, boost: number?): Stats
 	local businessLevel = state.level
 	local reputation = Formulas.reputation(state)
 	local decor = level(state, "floor") + level(state, "walls") + level(state, "lighting") + level(state, "furniture")
@@ -94,6 +95,7 @@ function Formulas.computeStats(definition: Businesses.Definition, state: Busines
 	local levelMultiplier = 1 + 0.25 * (businessLevel - 1)
 	local income = throughput * spend / 60 * levelMultiplier * Config.prestigeMultiplier(prestige)
 		* (1 + Config.Population.incomeBonus * people)
+		* (boost or 1)
 
 	return {
 		customers = customers,
@@ -130,8 +132,8 @@ function Formulas.starterShop(businesses: { [string]: any }): string?
 end
 
 -- Estimated income of a freshly bought business (used on purchase signs).
-function Formulas.startingIncome(definition: Businesses.Definition, prestige: number, population: number?): number
-	return Formulas.computeStats(definition, { level = 1, upgrades = {} }, prestige, population).income
+function Formulas.startingIncome(definition: Businesses.Definition, prestige: number, population: number?, boost: number?): number
+	return Formulas.computeStats(definition, { level = 1, upgrades = {} }, prestige, population, boost).income
 end
 
 function Formulas.upgradeCost(definition: Businesses.Definition, upgrade: Businesses.Upgrade, currentLevel: number): number

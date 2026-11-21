@@ -65,6 +65,9 @@ Config.SESSION_LOCK_EXPIRY = 600 -- seconds before a stale session lock may be t
 -- (RunService:IsStudio() is false there). Set false to playtest with your real save.
 Config.STUDIO_TEST_MODE = true
 Config.STUDIO_TEST_MONEY = 1_000_000_000
+-- Game passes (Monetization keys) to treat as owned in a Studio test, to try their effects
+-- without buying them, e.g. { "DoubleCash", "VIP" }. Live servers ignore this.
+Config.STUDIO_TEST_PASSES = {} :: { string }
 
 ----- Private interiors -----
 -- Every player gets a private "slot" far away from the shared city. The player's own
