@@ -27,7 +27,7 @@ local profiles: { [Player]: Profile } = {}
 local loadedCallbacks: { (Player, Profile) -> () } = {}
 local services: any
 local store: DataStore? = nil
-local storeStatus = "ok" -- "ok" | "unavailable"
+local storeStatus = "ok" -- "ok" | "unavailable" | "test" (Studio test mode: no DataStore at all)
 
 local KEY_PREFIX = "Player_"
 local LOAD_ATTEMPTS = 6
@@ -253,7 +253,10 @@ local function onPlayerAdded(player: Player)
 	if data == nil then
 		data = DataService.defaults()
 		canSave = false
-		if storeStatus == "unavailable" then
+		if storeStatus == "test" then
+			data.money = Config.STUDIO_TEST_MONEY
+			profile.runtime.saveWarning = "Studio test mode: nothing is loaded or saved, and you start with test cash."
+		elseif storeStatus == "unavailable" then
 			profile.runtime.saveWarning = "Saving is off in this Studio session (enable Studio API access after publishing)."
 		else
 			profile.runtime.saveWarning = "Your data could not be loaded. Progress this session will NOT be saved - please rejoin later."
@@ -285,6 +288,11 @@ end
 
 function DataService.init(registry: any)
 	services = registry
+	if RunService:IsStudio() and Config.STUDIO_TEST_MODE then
+		-- Never open the real store in a Studio test session, so nothing can be read or written.
+		storeStatus = "test"
+		return
+	end
 	local ok, result = pcall(function()
 		return DataStoreService:GetDataStore(Config.DATASTORE_NAME)
 	end)

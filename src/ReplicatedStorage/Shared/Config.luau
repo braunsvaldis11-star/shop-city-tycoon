@@ -59,6 +59,13 @@ Config.DATA_VERSION = 1
 Config.AUTOSAVE_INTERVAL = 90
 Config.SESSION_LOCK_EXPIRY = 600 -- seconds before a stale session lock may be taken over
 
+-- Studio test mode: in a Studio playtest the game never touches the DataStore (nothing is
+-- loaded or saved) and every player starts with STUDIO_TEST_MONEY, so shops and mini games
+-- can be tested without changing anyone's real save. Live servers are never affected
+-- (RunService:IsStudio() is false there). Set false to playtest with your real save.
+Config.STUDIO_TEST_MODE = true
+Config.STUDIO_TEST_MONEY = 1_000_000_000
+
 ----- Private interiors -----
 -- Every player gets a private "slot" far away from the shared city. The player's own
 -- client builds the interior there, so nobody else ever sees or touches it.

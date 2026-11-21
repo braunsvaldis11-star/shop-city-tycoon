@@ -1,13 +1,20 @@
 # To do
 
-Snapshot taken 2026-11-20, in the middle of the mini-game update.
+Last updated 2026-11-21.
 
-## In progress: mini games and customer payments
+## Next: publish the mini-game update
+
+Everything below is built, saved in Studio and playtested. The live game still runs the old
+version until someone publishes (File > Publish to Roblox).
+
+- [ ] **Publish the place** (File > Publish to Roblox)
+- [ ] After publishing, join the live game once and check a shop and its mini game work
+
+## Done in the mini-game update
 
 Requested: replace "Serve Customer" with a mini game for every business, lower the counter,
 make shop customers buy something inside, and have attractions charge an entry fee.
 
-Done (in Studio and in this repo):
 - [x] Counter lowered to waist height (counter, registers, pickup trays, prep counters)
 - [x] `MiniGames` shared module: 26 games in 5 kinds, order generation, checking, grades
 - [x] `MiniGameService` on the server (orders, checks, anti-speed, rewards); added to `Main`
@@ -18,31 +25,30 @@ Done (in Studio and in this repo):
 - [x] Server pays shops 6 s after the customer reaches the door (`Config.SHOP_VISIT_SECONDS`)
 - [x] Interior: customers walk in when their street walker reaches the door; attraction
       visitors pay at the door (🎟️), then sit or watch, then leave
-- [x] Every script compiles
+- [x] Street walkers (`AmbientController`): shoppers come back out carrying what they bought
+      and "🛍️ +$" pops up then; attraction visitors show "🎟️ +$" as they go in
+- [x] Help text, business tip and the two "serve" achievements now talk about mini games
+- [x] Pick-game shelf fits the window (5 × 2; it used to spill a third row out of the window)
+- [x] "Start over" button in the Bank game showed a missing symbol; now 🔄
+- [x] **Studio test mode** (`Config.STUDIO_TEST_MODE`): Studio playtests never open the
+      DataStore and start with $1B test cash, so shops can be bought and tested safely
+- [x] Playtested 2026-11-21 in test mode, every kind: recipe (Pizza, PERFECT ×2), pick
+      (Bookstore, GREAT ×1.5), memory (Arcade, GREAT with a replay after a wrong pad), cash
+      (Bank, PERFECT, Next and Close), timing (Gym, GOOD after 3 misses). No script errors.
 
-Still to do:
-- [ ] **Playtest every mini-game kind** (recipe, pick, cash, timing, memory) and check the
-      console for errors. Needs a test account that owns a shop: never buy businesses or
-      grant money on the published game for testing.
-- [ ] `AmbientController` (street walkers):
-  - shops: no popup when the customer goes in; after `SHOP_VISIT_SECONDS` they come out
-    carrying the product (`InteriorBuilder.product`) and the "🛍️ +$" popup shows then
-  - attractions: keep the popup on entering, but show "🎟️ +$"
-  - drop the carried item a few nodes later; clear it when a walker is recycled
-- [ ] `UIPanels` help text: "F to serve" → "F plays the mini game", "Y serves" → "Y plays the mini game"
-- [ ] `UIPanels` business tip: "Every customer pays when they're served" → explain shops pay on the
-      way out and attractions at the door
-- [ ] `Goals`: "Serve 100 customers yourself" → "Complete 100 mini games" (same for 1,000)
-- [ ] Save the place, then publish (File > Publish to Roblox) once it is tested
+## Known quirks
+
+- Visitors wait at a door while a player stands in the doorway (walkers step around
+  players), so they pile up there until the player moves.
 
 ## Ideas and requests
 
 - [ ] **Museum** business with an entry fee (asked for; there is no museum yet)
-- [ ] AI thumbnails and icon for the game page (Forge GUI ran out of credits: 3 thumbnails
-      needed 1,600, the account had 1,064)
-- [ ] Rename the place from "wwww" to the chosen title, Shop City Tycoon
+- [ ] Rename the place from "wwww" to Shop City Tycoon, write a game description
+- [ ] Thumbnails and icon for the game page (screenshots from Studio are free; Forge GUI ran
+      out of credits: 3 thumbnails needed 1,600, the account had 1,064)
 
-## Recently finished (before this snapshot)
+## Recently finished (before the mini-game update)
 
 - Grand Opening crowd walks away and is cleaned up instead of standing forever
 - Prestige needs shops, not cash: 1, 3, 5, 8, then 11 shops; 5 prestiges max

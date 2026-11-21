@@ -473,8 +473,12 @@ builders.pick = function(s: Session, order: MiniGames.Order)
 	local slotList = UIKit.list(Enum.FillDirection.Horizontal, 6)
 	slotList.VerticalAlignment = Enum.VerticalAlignment.Center
 	slotList.Parent = slots
-	-- The shelf: every item, shuffled each order.
-	local shelf = grid(workBody, UDim2.fromOffset(8, 78), UDim2.new(1, -16, 0, 240), Vector2.new(82, 112), 8)
+	-- The shelf: every item, shuffled each order. Five tiles to a row (the width of the
+	-- recipe buttons); tiles get shorter if a game ever needs more than two rows.
+	local SHELF_HEIGHT, SHELF_GAP = 240, 6
+	local shelfRows = math.max(1, math.ceil(#game.items / 5))
+	local tileHeight = math.min(112, math.floor((SHELF_HEIGHT - SHELF_GAP * (shelfRows - 1)) / shelfRows))
+	local shelf = grid(workBody, UDim2.fromOffset(8, 78), UDim2.new(1, -16, 0, SHELF_HEIGHT), Vector2.new(82, tileHeight), SHELF_GAP)
 	local shown = table.clone(game.items)
 	for i = #shown, 2, -1 do
 		local j = rng:NextInteger(1, i)
@@ -575,7 +579,7 @@ builders.cash = function(s: Session, order: MiniGames.Order)
 		end)
 	end
 	UIKit.button({
-		Name = "StartOver", Text = "↺ Start over", Color = C.Red, MaxTextSize = 16,
+		Name = "StartOver", Text = "🔄 Start over", Color = C.Red, MaxTextSize = 16,
 		Size = UDim2.fromOffset(170, 32), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 296), Parent = workBody,
 	}, function()
 		if not s.submitted and session == s then

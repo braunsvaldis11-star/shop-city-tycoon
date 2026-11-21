@@ -6,8 +6,10 @@
 -- (CityPaths) and cross at the zebra crossings (cars stop for them).
 -- Customers are real: the server rolls every customer of every business (EconomyService)
 -- and tells us a few seconds before they pay. We send a pedestrian who can reach that
--- door in time (or bring one round the corner, out of sight), and when they step
--- inside the sale pops up over the door. So what walks in is exactly what you earn.
+-- door in time (or bring one round the corner, out of sight). Shop customers come back
+-- out Config.SHOP_VISIT_SECONDS later carrying what they bought, and the sale pops up
+-- then (that is when the server pays them); attraction visitors (Businesses.entryFee) pay
+-- at the door, so their ticket pops up as they go in. What walks in is what you earn.
 -- All parts move in ONE workspace:BulkMoveTo call per frame; far-away ones are skipped.
 -- Container: StarterPlayerScripts.Controllers
 
@@ -20,12 +22,14 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Businesses = require(Shared.Businesses)
 local CityLayout = require(Shared.CityLayout)
 local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Props = require(Shared.Props)
 local Client = ReplicatedStorage:WaitForChild("Client")
 local CityPaths = require(Client.CityPaths)
+local InteriorBuilder = require(Client.InteriorBuilder)
 local NpcRig = require(Client.NpcRig)
 
 local AmbientController = {}
@@ -47,7 +51,8 @@ local CAR_COLORS = {
 }
 
 -- Pedestrians.
-local VISIT_MIN, VISIT_MAX = 8, 20 -- seconds a customer spends inside
+local VISIT_MIN, VISIT_MAX = 8, 20 -- seconds an attraction visitor spends inside
+local CARRY_STOPS_MIN, CARRY_STOPS_MAX = 2, 4 -- sidewalk stops a shopper carries their bag before putting it away
 local MAX_INCOMING = 8 -- walkers heading for one door at once; extra sales ride along
 local ARRIVAL_SLACK = 3 -- seconds early/late a walker may arrive and still be picked
 local HIDDEN_BONUS = 40 -- studs of extra walk worth paying to start a walker out of sight
@@ -72,6 +77,7 @@ type Walker = {
 	jitter: Vector3, -- small personal offset so walkers do not all share one line
 	onRoad: boolean, -- currently on a crossing (cars stop)
 	shown: boolean, -- parented to the world (near the camera and not inside a shop)
+	carryStops: number, -- sidewalk stops left before the carried item is put away
 }
 
 local folder: Folder
@@ -161,6 +167,15 @@ local function walkTo(walker: Walker, nextNode: number)
 	walker.rig:setPath({ CityPaths.position(nextNode) + walker.jitter })
 end
 
+local function dropItem(walker: Walker)
+	local item = walker.rig.carrying
+	if item then
+		item:Destroy()
+		walker.rig.carrying = nil
+	end
+	walker.carryStops = 0
+end
+
 local function inView(point: Vector3): boolean
 	local camera = Workspace.CurrentCamera
 	if not camera then
@@ -191,6 +206,7 @@ local function place(walker: Walker, near: Vector3?)
 	walker.state = "wander"
 	walker.door = nil
 	walker.amount, walker.count = 0, 0
+	dropItem(walker)
 	walker.node = start
 	walkTo(walker, nextNode)
 end
@@ -202,13 +218,13 @@ local function spawnWalker(near: Vector3?)
 	local walker: Walker = {
 		rig = rig, state = "wander", node = 1, previous = nil, door = nil, amount = 0, count = 0, timer = 0,
 		jitter = Vector3.new(rng:NextNumber(-1.2, 1.2), 0, rng:NextNumber(-1.2, 1.2)),
-		onRoad = false, shown = false,
+		onRoad = false, shown = false, carryStops = 0,
 	}
 	place(walker, near)
 	table.insert(walkers, walker)
 end
 
-local function customerPopup(door: CityPaths.Door, amount: number, count: number)
+local function customerPopup(door: CityPaths.Door, amount: number, count: number, icon: string)
 	local anchor = Instance.new("Part")
 	anchor.Name = "CustomerPopup"
 	anchor.Anchored = true
@@ -227,7 +243,7 @@ local function customerPopup(door: CityPaths.Door, amount: number, count: number
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.FredokaOne
 	label.TextScaled = true
-	label.Text = "🛍️ +" .. Format.money(amount) .. if count > 1 then " ×" .. count else ""
+	label.Text = icon .. " +" .. Format.money(amount) .. if count > 1 then " ×" .. count else ""
 	label.TextColor3 = Color3.fromRGB(140, 255, 150)
 	label.TextStrokeTransparency = 0.3
 	label.Parent = gui
@@ -246,14 +262,21 @@ local function arrive(walker: Walker, focus: Vector3)
 	if state == "entering" then
 		-- Through the door: the customer is inside for a while.
 		walker.state = "inside"
-		walker.timer = rng:NextNumber(VISIT_MIN, VISIT_MAX)
 		walker.onRoad = false
 		rig.moving = false
 		rig.model.Parent = nil
 		walker.shown = false
 		local door = walker.door :: CityPaths.Door
-		if (door.approach - focus).Magnitude < POPUP_RADIUS then
-			customerPopup(door, walker.amount, walker.count)
+		local definition = Businesses.get(door.id)
+		if definition and definition.entryFee then
+			-- Attractions are paid at the door: show the ticket now.
+			walker.timer = rng:NextNumber(VISIT_MIN, VISIT_MAX)
+			if (door.approach - focus).Magnitude < POPUP_RADIUS then
+				customerPopup(door, walker.amount, walker.count, "🎟️")
+			end
+		else
+			-- Shops: pick something up and pay on the way out (when the server pays).
+			walker.timer = Config.SHOP_VISIT_SECONDS
 		end
 		return
 	end
@@ -261,6 +284,12 @@ local function arrive(walker: Walker, focus: Vector3)
 		walker.state = "wander"
 		walker.door = nil
 		walker.amount, walker.count = 0, 0
+	end
+	if rig.carrying and walker.state == "wander" then
+		walker.carryStops -= 1
+		if walker.carryStops <= 0 then
+			dropItem(walker)
+		end
 	end
 	local here = walker.node
 	if walker.state == "wander" then
@@ -496,6 +525,18 @@ local function update(dt: number)
 				walker.previous = nil
 				rig.position = door.inside
 				rig:setPath({ door.approach, CityPaths.position(door.entry) + walker.jitter })
+				local definition = Businesses.get(door.id)
+				if definition and not definition.entryFee then
+					-- Out with what they bought: this is when the shop gets paid.
+					dropItem(walker)
+					local item = InteriorBuilder.product(definition.productStyle, definition.theme)
+					item.Parent = rig.model
+					rig.carrying = item
+					walker.carryStops = rng:NextInteger(CARRY_STOPS_MIN, CARRY_STOPS_MAX)
+					if (door.approach - focus).Magnitude < POPUP_RADIUS then
+						customerPopup(door, walker.amount, walker.count, "🛍️")
+					end
+				end
 			end
 		else
 			if rig:step(dt) then

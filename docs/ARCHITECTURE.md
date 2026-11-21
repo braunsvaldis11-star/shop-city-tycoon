@@ -36,6 +36,10 @@ matters (money, customers, purchases, rewards); the client draws the world and s
   picks up their item and pays on the way out.
 - **Attractions** (`entryFee = true` in `Businesses`: Gym, Arcade, Cinema, Aquarium, Spa, Hotel)
   are paid at the door.
+- On the street (`AmbientController`) a shop customer goes in, comes back out
+  `SHOP_VISIT_SECONDS` later carrying the product (`InteriorBuilder.product`) and the
+  "🛍️ +$" popup shows then; they put the item away a few sidewalk stops later. Attraction
+  visitors show "🎟️ +$" as they go in.
 - Offline earnings are capped at 2 hours. Prestige multiplies income by +0.5 per level.
 
 ## Scripts
@@ -66,7 +70,7 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 | Script | What it does |
 |---|---|
 | `Net` | Remotes, rate limiting, error isolation |
-| `DataService` | Load, session-lock, autosave and release player data (`UpdateAsync` everywhere) |
+| `DataService` | Load, session-lock, autosave and release player data (`UpdateAsync` everywhere). In a Studio playtest with `Config.STUDIO_TEST_MODE` it never opens the DataStore and starts players with `STUDIO_TEST_MONEY` |
 | `EconomyService` | The only code that changes money; customers, offline earnings, stat cache |
 | `BusinessService` | Buying, upgrading and levelling businesses |
 | `InteriorService` | Entrances and private per-player interiors |

@@ -487,7 +487,7 @@ local function renderOverview(list: Instance, ctx: any, definition: any, biz: an
 	UIKit.button({ Name = "Walk", Text = "📍 Walk there", Color = C.Blue, Size = UDim2.fromOffset(190, 50), Position = UDim2.fromOffset(10, 8), MaxTextSize = 18, Parent = actions }, function()
 		waypoint(ctx, definition.id)
 	end)
-	text(actions, "Every customer pays when they're served. Fix the bottleneck first for the biggest boost.", 214, 13, 470, 40, 13, C.Muted, true)
+	text(actions, "Shoppers pay on the way out, attractions at the door. Fix the bottleneck first for the biggest boost.", 214, 13, 470, 40, 13, C.Muted, true)
 
 	return function(state: any)
 		local current = state.businesses[definition.id]
@@ -1575,7 +1575,7 @@ local function renderSettings(container: Frame, ctx: any)
 	text(save, if state.saving then "💾 Progress saves automatically." else "⚠️ Saving is OFF for this session.", 14, 15, 600, 30, 20)
 	local help = row(list, 150, 7)
 	text(help, "Controls", 14, 10, 300, 26, 22, C.Yellow)
-	text(help, "PC: E to buy / enter, F to serve, B Shops, U Upgrades, M Map, P Prestige, K Awards.\nConsole: Select opens the menu, B goes back / closes, X uses doors, Y serves.\nMobile: tap the on-screen prompts and buttons.", 14, 42, 660, 100, 15, C.Muted, true)
+	text(help, "PC: E to buy / enter, F plays the mini game, B Shops, U Upgrades, M Map, P Prestige, K Awards.\nConsole: Select opens the menu, B goes back / closes, X uses doors, Y plays the mini game.\nMobile: tap the on-screen prompts and buttons.", 14, 42, 660, 100, 15, C.Muted, true)
 end
 
 ----- Change detection -----

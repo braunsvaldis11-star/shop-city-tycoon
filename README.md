@@ -23,16 +23,23 @@ to earn extra cash. When you own enough shops you can Prestige for a permanent i
 | Prestige by shops owned (1 / 3 / 5 / 8 / 11, max 5) | ✅ Done |
 | Grand Opening cinematic (crowd now walks away and cleans up) | ✅ Done |
 | Lower counter in every interior, chairs facing the tables | ✅ Done |
-| **Mini games replace "Serve Customer"** (all 26 businesses) | 🟡 Built, compiles, **not playtested yet** |
-| Shops: customers pay on the way out with their item; attractions charge an entry fee | 🟡 Server + interior done, street walkers not yet |
-| Help text and achievements still say "serve" | 🔴 To do |
+| **Mini games replace "Serve Customer"** (all 26 businesses) | ✅ Done, playtested (all 5 kinds) |
+| Shops: customers pay on the way out with their item; attractions charge an entry fee | ✅ Done |
+| Studio test mode (no saving, $1B test cash in Studio playtests) | ✅ Done |
+| **Publish the mini-game update** | 🟡 Saved in Studio, **not published yet** |
 | Museum business (asked for) | 🔴 Idea, not started |
-| AI thumbnails / icon | 🔴 Not started (Forge credits ran out) |
+| Game page: name, description, thumbnails | 🔴 Not started (place is still called "wwww") |
 
 The full list is in [docs/TODO.md](docs/TODO.md).
 
-**Do not publish the place** (File > Publish to Roblox) until the mini games have been
-playtested: the live game still runs the last published version.
+The live game runs the last **published** version. Studio saves (and Team Create) do not reach
+players until someone uses File > Publish to Roblox.
+
+### Testing in Studio
+
+`Config.STUDIO_TEST_MODE` is on: in a Studio playtest nothing is loaded or saved and you start
+with $1B, so buy shops and play the mini games freely. Live servers ignore it. Set it to
+`false` only if you need to playtest with your real save.
 
 ## Folder layout
 
