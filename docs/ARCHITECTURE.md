@@ -13,7 +13,7 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 - A new service must be added to the registry **and** to both lists.
 
 **Client** (`StarterPlayerScripts/ClientMain.client.luau`)
-- Order: Store, Sound, UI, Interior, City, Ambient, DayNight, Job, MiniGame, Opening, Life
+- Order: Store, Sound, UI, Interior, City, Ambient, DayNight, Job, MiniGame, Opening, Life, Guide
 - Each controller gets `init(registry)` (no yielding), then `start()` in its own thread.
 
 ## Networking
@@ -87,13 +87,14 @@ matters (money, customers, purchases, rewards); the client draws the world and s
 | `UIController` | HUD, menu window, toasts, cash popups, screen fade (PC, mobile, console) |
 | `UIPanels` | Contents of every menu page |
 | `InteriorController` | Builds your private interior; runs staff, customers and visitors |
-| `CityController` | Restyles the shared city from your own state (doors, signs, flags) |
+| `CityController` | Restyles the shared city from your own state (doors, signs, flags); `setWaypoint` draws the golden trail to a door |
 | `AmbientController` | Traffic and pedestrians; sends street customers to doors |
 | `DayNightController` | 12-minute day/night cycle on server time |
 | `JobController` | Paper-route job visuals |
 | `MiniGameController` | The mini-game window (draws the order, reports the answer) |
 | `OpeningController` | "Grand Opening" cinematic when you buy a business |
 | `LifeController` | Small life touches: chatter, gulls, busker... |
+| `GuideController` | New-player guide: a chip with 4 steps (buy the first shop, play the mini game, buy an upgrade, buy a 2nd shop), the golden trail and a "PLAY HERE" arrow over the counter. Steps come from the synced state (shops, `stats`, money), so nothing extra is saved; it ends at 2 shops |
 
 ### Dev tools (`src/ServerStorage/DevTools`) — edit time only
 | Script | What it does |

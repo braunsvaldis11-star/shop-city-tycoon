@@ -2,13 +2,29 @@
 
 Last updated 2026-11-21.
 
-## Next: publish the mini-game update
+## Next: publish the mini-game update and the new-player guide
 
 Everything below is built, saved in Studio and playtested. The live game still runs the old
 version until someone publishes (File > Publish to Roblox).
 
 - [ ] **Publish the place** (File > Publish to Roblox)
 - [ ] After publishing, join the live game once and check a shop and its mini game work
+- [ ] Look at the guide's "PLAY HERE" arrow over the counter in a real playtest (Studio
+      screenshots don't draw floating labels, so it was only checked by its properties)
+
+## Done: new-player guide (2026-11-21)
+
+- [x] `GuideController`: a chip above the business bar with 4 steps: buy your first shop,
+      play the mini game, buy an upgrade, save up for and buy a 2nd shop. Each step has a
+      button (📍 Show me, ▶ Play or ⬆️ Upgrades) and a progress bar while saving up
+- [x] Golden trail to the right door, and a bouncing "PLAY HERE" arrow over the counter
+- [x] Text names the right button for PC, console or mobile
+- [x] Worked out from the synced state, so nothing new is saved; players who own 2+ shops
+      never see it, and after a prestige only "buy your first shop" comes back
+- [x] Replaces the old first-shop chip (CityController) and the paper-route chip's
+      duplicate "Your first shop is waiting!" line (JobController)
+- [x] Playtested in test mode ($3,000 start for the test): every step, every button, the
+      "enough for the Bakery" toast and "Guide done!" at the end. No script errors.
 
 ## Done in the mini-game update
 

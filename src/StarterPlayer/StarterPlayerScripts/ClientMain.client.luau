@@ -17,6 +17,7 @@ local ORDER = {
 	{ key = "MiniGame", module = "MiniGameController" },
 	{ key = "Opening", module = "OpeningController" },
 	{ key = "Life", module = "LifeController" },
+	{ key = "Guide", module = "GuideController" },
 }
 
 local registry: { [string]: any } = {}

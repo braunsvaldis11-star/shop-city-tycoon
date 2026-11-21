@@ -15,7 +15,6 @@ local Businesses = require(Shared.Businesses)
 local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Formulas = require(Shared.Formulas)
-local UIKit = require(ReplicatedStorage:WaitForChild("Client"):WaitForChild("UIKit"))
 
 local CityController = {}
 
@@ -233,83 +232,13 @@ local function styleLot(lot: Lot, state: any)
 	end
 end
 
------ First-shop guide: a chip at the bottom until you own a business -----
-local guide: Frame? = nil
-local guideText: TextLabel? = nil
-
-local function buildGuide()
-	local gui = player:WaitForChild("PlayerGui"):WaitForChild("CityHUD", 15)
-	local root = gui and gui:WaitForChild("Root", 10)
-	if not root then
-		return
-	end
-	local frame = UIKit.panel({
-		Name = "Guide",
-		Size = UDim2.fromOffset(430, 50),
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -112),
-		Visible = false,
-		Parent = root,
-	})
-	guideText = UIKit.label({ Text = "", Size = UDim2.new(1, -128, 1, -12), Position = UDim2.fromOffset(12, 6), MaxTextSize = 20, Parent = frame })
-	UIKit.button({
-		Name = "ShowMe",
-		Text = "📍 Show me",
-		Color = UIKit.Colors.Green,
-		Size = UDim2.fromOffset(110, 40),
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -6, 0.5, 0),
-		MaxTextSize = 17,
-		Parent = frame,
-	}, function()
-		local state = controllers.Store.state
-		if state and state.starterShop then
-			CityController.setWaypoint(state.starterShop)
-		end
-	end)
-	guide = frame
-end
-
-local function updateGuide()
-	local frame, label = guide, guideText
-	if not frame or not label then
-		return
-	end
-	local state = controllers.Store.state
-	local starter = state and state.starterShop and Businesses.get(state.starterShop)
-	local show = starter ~= nil and not controllers.Interior.isInside()
-	if show and starter then
-		label.Text = if state.money >= starter.price
-			then starter.emoji .. " Buy your first shop: the " .. starter.name .. "!"
-			else starter.emoji .. " Your first shop: " .. starter.name .. " (" .. Format.cash(starter.price) .. ")"
-	end
-	if frame.Visible ~= show then
-		frame.Visible = show
-	end
-end
-
-local lastStarter: string? = nil
-
+-- The new-player guide (chip, steps and when to show the trail) is GuideController.
 local function applyState(state: any)
 	if not state or not state.businesses then
 		return
 	end
 	for _, lot in lots do
 		styleLot(lot, state)
-	end
-	updateGuide()
-	-- You own nothing yet (new player / fresh prestige): point the way to the first shop.
-	local starter = state.starterShop
-	if starter ~= lastStarter then
-		lastStarter = starter
-		if starter and lots[starter] then
-			task.delay(2.5, function()
-				local now = controllers.Store.state
-				if now and now.starterShop == starter and not (waypoint and waypoint.id == starter) then
-					CityController.setWaypoint(starter)
-				end
-			end)
-		end
 	end
 end
 
@@ -318,7 +247,6 @@ function CityController.init(registry: any)
 end
 
 function CityController.start()
-	task.spawn(buildGuide)
 	findLots()
 	controllers.Store.onChange(applyState)
 	applyState(controllers.Store.state)
@@ -328,7 +256,6 @@ function CityController.start()
 		if elapsed >= 0.2 then
 			elapsed = 0
 			updateWaypoint()
-			updateGuide()
 		end
 	end)
 end

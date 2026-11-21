@@ -369,6 +369,10 @@ function UIController.close()
 	end
 end
 
+function UIController.isOpen(): boolean
+	return window.Visible and currentTab ~= nil
+end
+
 function UIController.toggle(tabId: string)
 	if window.Visible and currentTab == tabId then
 		UIController.close()
@@ -905,15 +909,19 @@ local function layout()
 	if contextBar.Visible then
 		chipBottom -= math.floor(90 * fit) + 10
 	end
-	-- Guide chips (the first-shop guide, the optional paper route) stack upward.
+	-- Guide chips (the new-player guide, the optional paper route) stack upward. A chip
+	-- may ask for its own size with the ChipWidth / ChipHeight attributes.
 	for _, name in GUIDE_CHIPS do
 		local chip = root:FindFirstChild(name)
 		if chip and chip:IsA("Frame") then
+			local width = chip:GetAttribute("ChipWidth")
+			local height = chip:GetAttribute("ChipHeight")
+			local chipHeight = if type(height) == "number" then height else 50
 			chip.AnchorPoint = Vector2.new(0.5, 1)
-			chip.Size = UDim2.fromOffset(math.floor(math.min(430, available)), 50)
+			chip.Size = UDim2.fromOffset(math.floor(math.min(if type(width) == "number" then width else 430, available)), chipHeight)
 			chip.Position = UDim2.fromOffset(math.floor(cw / 2), chipBottom)
 			if chip.Visible then
-				chipBottom -= 58
+				chipBottom -= chipHeight + 8
 			end
 		end
 	end

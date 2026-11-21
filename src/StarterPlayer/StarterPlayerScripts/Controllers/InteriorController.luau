@@ -850,6 +850,11 @@ function InteriorController.currentBusiness(): string?
 	return if active then active.businessId else nil
 end
 
+-- The counter's mini-game prompt in the room you are in (the new-player guide points at it).
+function InteriorController.workPrompt(): ProximityPrompt?
+	return if active then active.layout.workPrompt else nil
+end
+
 -- Mini game finished: the customer at the front of a line gets their order now.
 function InteriorController.serveFront()
 	local front = frontCustomer()

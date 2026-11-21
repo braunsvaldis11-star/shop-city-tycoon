@@ -26,7 +26,8 @@ to earn extra cash. When you own enough shops you can Prestige for a permanent i
 | **Mini games replace "Serve Customer"** (all 26 businesses) | ✅ Done, playtested (all 5 kinds) |
 | Shops: customers pay on the way out with their item; attractions charge an entry fee | ✅ Done |
 | Studio test mode (no saving, $1B test cash in Studio playtests) | ✅ Done |
-| **Publish the mini-game update** | 🟡 Saved in Studio, **not published yet** |
+| New-player guide (4 steps: first shop, mini game, upgrade, 2nd shop) | ✅ Done, playtested |
+| **Publish the mini-game update and the guide** | 🟡 Saved in Studio, **not published yet** |
 | Museum business (asked for) | 🔴 Idea, not started |
 | Game page: name, description, icon, thumbnails | 🟡 Ready in [marketing/](marketing/game-page.md), not uploaded yet (page is still called "wwww") |
 

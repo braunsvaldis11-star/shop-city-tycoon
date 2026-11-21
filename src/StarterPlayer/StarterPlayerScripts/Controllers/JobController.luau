@@ -643,8 +643,6 @@ local function refresh()
 		local text: string? = nil
 		if papers > 0 then
 			text = string.format("\u{1F4F0} %d / %d papers left  \u{2022}  follow the yellow line!", papers, JOB.bagSize)
-		elseif freeReady and not ownsAnything() then
-			text = "\u{1F381} Your first shop is waiting! Follow the golden trail"
 		elseif showStart then
 			text = "\u{1F4F0} Deliver newspapers for extra cash!"
 		end
